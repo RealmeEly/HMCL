@@ -26,10 +26,12 @@ plugins {
 
 val projectConfig = PropertiesUtils.load(rootProject.file("config/project.properties").toPath())
 
-val isOfficial = JenkinsUtils.IS_ON_CI || GitHubActionUtils.IS_ON_OFFICIAL_REPO
+val isOfficial = false
 
 val versionType = System.getenv("VERSION_TYPE") ?: if (isOfficial) "nightly" else "unofficial"
 val versionRoot = System.getenv("VERSION_ROOT") ?: projectConfig.getProperty("versionRoot") ?: "3"
+
+val modifiedSuffix = "-modified_by_RealmeEly"
 
 val microsoftAuthId = System.getenv("MICROSOFT_AUTH_ID") ?: ""
 val curseForgeApiKey = System.getenv("CURSEFORGE_API_KEY") ?: ""
@@ -39,18 +41,18 @@ val launcherExe = System.getenv("HMCL_LAUNCHER_EXE") ?: ""
 val buildNumber = System.getenv("BUILD_NUMBER")?.toInt()
 if (buildNumber != null) {
     version = if (JenkinsUtils.IS_ON_CI && versionType == "dev") {
-        "$versionRoot.0.$buildNumber"
+        "$versionRoot.0.$buildNumber$modifiedSuffix"
     } else {
-        "$versionRoot.$buildNumber"
+        "$versionRoot.$buildNumber$modifiedSuffix"
     }
 } else {
     val shortCommit = System.getenv("GITHUB_SHA")?.lowercase()?.substring(0, 7)
     version = if (shortCommit.isNullOrBlank()) {
         "$versionRoot.SNAPSHOT"
     } else if (isOfficial) {
-        "$versionRoot.dev-$shortCommit"
+        "$versionRoot.dev-$shortCommit$modifiedSuffix"
     } else {
-        "$versionRoot.unofficial-$shortCommit"
+        "$versionRoot.unofficial-$shortCommit$modifiedSuffix"
     }
 }
 
@@ -297,7 +299,7 @@ val makeDeb = tasks.register("makeDeb", CreateDeb::class) {
     val debChannel = when (versionType) {
         "stable" -> ReleaseType.STABLE
         "dev" -> ReleaseType.DEVELOPMENT
-        else -> ReleaseType.NIGHTLY
+        else -> ReleaseType.UNOFFICIAL
     }
 
     version.set(project.version.toString())
